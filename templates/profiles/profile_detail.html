@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% block title %}{{ profile.first_name }} — Spark{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-hero { position: relative; border-radius: 24px; overflow: hidden; height: 480px; background: var(--surface); margin-bottom: 20px; }
+    .profile-hero img { width: 100%; height: 100%; object-fit: cover; }
+    .profile-hero-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e, #16213e); display: flex; align-items: center; justify-content: center; font-size: 6rem; }
+    .profile-hero-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 28px; background: linear-gradient(transparent, rgba(0,0,0,0.9)); }
+    .hero-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.2rem; }
+    .hero-meta { color: rgba(255,255,255,0.7); margin-top: 6px; }
+    .photo-strip { display: flex; gap: 10px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 4px; }
+    .photo-strip img { height: 120px; width: 90px; object-fit: cover; border-radius: 14px; flex-shrink: 0; border: 2px solid transparent; cursor: pointer; transition: all 0.2s; }
+    .photo-strip img:hover { border-color: var(--flame); }
+    .photo-strip img.active { border-color: var(--flame); }
+    .info-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; font-size: 0.85rem; color: var(--muted); }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .interest-pill { padding: 5px 14px; background: rgba(255,68,88,0.1); border: 1px solid rgba(255,68,88,0.2); border-radius: 20px; font-size: 0.8rem; color: var(--flame); }
+    .profile-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+    @media(max-width:768px) { .profile-grid { grid-template-columns: 1fr; } }
+    .verified-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(0,180,216,0.15); color: var(--superlike); border: 1px solid rgba(0,180,216,0.3); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:760px;margin:0 auto;">
+    <div class="profile-hero" id="hero">
+        {% if profile.primary_photo %}
+            <img src="{{ profile.primary_photo.image.url }}" alt="{{ profile.first_name }}" id="hero-img">
+        {% else %}
+            <div class="profile-hero-placeholder">😊</div>
+        {% endif %}
+        <div class="profile-hero-overlay">
+            <div class="hero-name">
+                {{ profile.first_name }}{% if profile.last_name %} {{ profile.last_name }}{% endif %}
+                {% if profile.age %}, {{ profile.age }}{% endif %}
+            </div>
+            <div class="hero-meta">
+                {% if profile.job_title %}{{ profile.job_title }}{% if profile.company %} at {{ profile.company }}{% endif %}{% endif %}
+                {% if profile.location %} · {{ profile.location }}{% endif %}
+            </div>
+            {% if profile.is_verified %}<span class="verified-badge" style="margin-top:10px;display:inline-flex;">✓ Verified Profile</span>{% endif %}
+        </div>
+    </div>
+
+    {% if profile.photos.count > 1 %}
+    <div class="photo-strip">
+        {% for photo in profile.photos.all %}
+        <img src="{{ photo.image.url }}" alt="" class="{% if photo.is_primary %}active{% endif %}"
+             onclick="switchPhoto('{{ photo.image.url }}', this)">
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="profile-grid">
+        <div>
+            {% if profile.bio %}
+            <div class="card" style="margin-bottom:16px;">
+                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:10px;">About</div>
+                <p style="line-height:1.6;font-size:0.9rem;">{{ profile.bio }}</p>
+            </div>
+            {% endif %}
+
+            {% if profile.profile_interests.exists %}
+            <div class="card">
+                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:12px;">Interests</div>
+                <div class="chips">
+                    {% for pi in profile.profile_interests.all %}
+                    <span class="interest-pill">{{ pi.interest.emoji }} {{ pi.interest.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div>
+            <div class="card">
+                <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);margin-bottom:12px;">Details</div>
+                <div class="chips">
+                    {% if profile.location %}
+                    <span class="info-chip">📍 {{ profile.location }}</span>
+                    {% endif %}
+                    {% if profile.education %}
+                    <span class="info-chip">🎓 {{ profile.education }}</span>
+                    {% endif %}
+                    {% if profile.job_title %}
+                    <span class="info-chip">💼 {{ profile.job_title }}</span>
+                    {% endif %}
+                    {% if profile.get_gender_display %}
+                    <span class="info-chip">{{ profile.get_gender_display }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align:center;margin-top:24px;">
+        <a href="javascript:history.back()" class="btn btn-ghost">← Back</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchPhoto(url, el) {
+    document.getElementById('hero-img').src = url;
+    document.querySelectorAll('.photo-strip img').forEach(i => i.classList.remove('active'));
+    el.classList.add('active');
+}
+</script>
+{% endblock %}

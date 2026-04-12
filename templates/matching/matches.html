@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% block title %}Matches — Spark{% endblock %}
+{% block nav_matches %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .matches-header {
+        margin-bottom: 28px;
+    }
+    .matches-title {
+        font-family: 'Syne', sans-serif;
+        font-weight: 800;
+        font-size: 1.8rem;
+    }
+    .matches-subtitle { color: var(--muted); margin-top: 4px; font-size: 0.875rem; }
+    .match-list { display: flex; flex-direction: column; gap: 12px; }
+    .match-item {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 16px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        text-decoration: none;
+        color: var(--text);
+        transition: all 0.2s;
+    }
+    .match-item:hover { border-color: rgba(255,68,88,0.3); background: var(--surface2); transform: translateX(4px); }
+    .match-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--border);
+        flex-shrink: 0;
+    }
+    .match-avatar-placeholder {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--flame), #ff8c69);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Syne', sans-serif;
+        font-weight: 800;
+        font-size: 1.4rem;
+        color: white;
+        flex-shrink: 0;
+    }
+    .match-info { flex: 1; min-width: 0; }
+    .match-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; }
+    .match-last-msg { color: var(--muted); font-size: 0.8rem; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .match-time { color: var(--muted); font-size: 0.75rem; flex-shrink: 0; }
+    .new-match-badge { background: var(--flame); color: white; font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+    .unread-dot { width: 10px; height: 10px; background: var(--flame); border-radius: 50%; flex-shrink: 0; }
+    .empty-matches {
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--muted);
+    }
+    .empty-matches .icon { font-size: 4rem; margin-bottom: 16px; }
+    .empty-matches h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.3rem; color: var(--text); margin-bottom: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="matches-header">
+    <h1 class="matches-title">❤️ Your Matches</h1>
+    <p class="matches-subtitle">{{ match_data|length }} match{{ match_data|length|pluralize:"es" }}</p>
+</div>
+
+{% if match_data %}
+<div class="match-list">
+    {% for item in match_data %}
+    <a href="{% url 'chat:chat_room' item.other_user.id %}" class="match-item">
+        {% if item.other_profile.primary_photo %}
+            <img src="{{ item.other_profile.primary_photo.image.url }}" alt="{{ item.other_profile.first_name }}" class="match-avatar">
+        {% else %}
+            <div class="match-avatar-placeholder">{{ item.other_profile.first_name|first }}</div>
+        {% endif %}
+        <div class="match-info">
+            <div class="match-name">
+                {{ item.other_profile.first_name }}
+                {% if item.other_profile.age %}, {{ item.other_profile.age }}{% endif %}
+                {% if item.other_profile.is_verified %}<span style="color:var(--superlike);font-size:0.8rem;">✓</span>{% endif %}
+            </div>
+            {% if item.last_message %}
+                <div class="match-last-msg">
+                    {% if item.last_message.sender == request.user %}You: {% endif %}
+                    {{ item.last_message.content|truncatechars:50 }}
+                </div>
+            {% else %}
+                <div class="match-last-msg" style="color:var(--flame);">✨ New match — say hello!</div>
+            {% endif %}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            {% if item.last_message %}
+                <span class="match-time">{{ item.last_message.created_at|timesince }} ago</span>
+                {% if item.last_message.receiver == request.user and not item.last_message.is_read %}
+                    <div class="unread-dot"></div>
+                {% endif %}
+            {% else %}
+                <span class="new-match-badge">NEW</span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-matches">
+    <div class="icon">💔</div>
+    <h3>No matches yet</h3>
+    <p>Keep swiping to find your connections!</p>
+    <a href="{% url 'profiles:discover' %}" class="btn btn-flame" style="margin-top:20px;">Start Swiping</a>
+</div>
+{% endif %}
+{% endblock %}

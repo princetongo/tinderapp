@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Users — Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-nav { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .admin-nav-link { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+    .admin-nav-link:hover, .admin-nav-link.active { background: var(--flame); color: white; border-color: var(--flame); }
+    .search-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .search-input { flex: 1; min-width: 200px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem; }
+    .search-input:focus { outline: none; border-color: var(--flame); }
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .filter-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); text-decoration: none; font-size: 0.8rem; transition: all 0.2s; }
+    .filter-tab.active, .filter-tab:hover { background: var(--flame); color: white; border-color: var(--flame); }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 16px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); border-bottom: 1px solid var(--border); }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 0.875rem; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
+    .badge-active { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+    .badge-banned { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+    .badge-incomplete { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+    .badge-admin { background: rgba(255,68,88,0.15); color: var(--flame); border: 1px solid rgba(255,68,88,0.3); }
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-mini-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--flame), #ff8c69); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem; color: white; flex-shrink: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+    <h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;">👥 Users</h1>
+    <span style="color:var(--muted);font-size:0.875rem;">{{ users|length }} result(s)</span>
+</div>
+
+<div class="admin-nav">
+    <a href="{% url 'admin_panel:dashboard' %}" class="admin-nav-link">Dashboard</a>
+    <a href="{% url 'admin_panel:user_list' %}" class="admin-nav-link active">Users</a>
+    <a href="{% url 'admin_panel:reports' %}" class="admin-nav-link">Reports</a>
+</div>
+
+<form method="get" class="search-bar">
+    <input type="text" name="q" class="search-input" placeholder="Search by email or username..." value="{{ query }}">
+    <button type="submit" class="btn btn-flame">Search</button>
+    {% if query %}<a href="{% url 'admin_panel:user_list' %}" class="btn btn-ghost">Clear</a>{% endif %}
+</form>
+
+<div class="filter-tabs">
+    <a href="?filter=all{% if query %}&q={{ query }}{% endif %}" class="filter-tab {% if filter_type == 'all' %}active{% endif %}">All</a>
+    <a href="?filter=active{% if query %}&q={{ query }}{% endif %}" class="filter-tab {% if filter_type == 'active' %}active{% endif %}">Active</a>
+    <a href="?filter=banned{% if query %}&q={{ query }}{% endif %}" class="filter-tab {% if filter_type == 'banned' %}active{% endif %}">Banned</a>
+    <a href="?filter=incomplete{% if query %}&q={{ query }}{% endif %}" class="filter-tab {% if filter_type == 'incomplete' %}active{% endif %}">Incomplete</a>
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+    <table>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Joined</th>
+                <th>Last Seen</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <div class="user-cell">
+                        <div class="user-mini-avatar">{{ user.username|first|upper }}</div>
+                        <div>
+                            <div style="font-weight:500;">{{ user.username }}</div>
+                            <div style="color:var(--muted);font-size:0.75rem;">{{ user.email }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td style="color:var(--muted);">{{ user.date_joined|date:"M d, Y" }}</td>
+                <td style="color:var(--muted);">
+                    {% if user.last_seen %}{{ user.last_seen|timesince }} ago{% else %}Never{% endif %}
+                </td>
+                <td>
+                    {% if user.is_admin or user.is_staff %}
+                        <span class="status-badge badge-admin">Admin</span>
+                    {% elif user.is_banned %}
+                        <span class="status-badge badge-banned">Banned</span>
+                    {% elif user.is_active %}
+                        <span class="status-badge badge-active">Active</span>
+                    {% else %}
+                        <span class="status-badge badge-incomplete">Inactive</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'admin_panel:user_detail' user.id %}" class="btn btn-sm btn-ghost">View</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align:center;color:var(--muted);padding:40px;">No users found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

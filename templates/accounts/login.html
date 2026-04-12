@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Sign In — Mbinga{% endblock %}
+{% block content %}
+<style>
+    body { background: radial-gradient(ellipse at 30% 20%, rgba(255,68,88,0.12) 0%, var(--bg) 60%); }
+    .auth-wrap {
+        min-height: calc(100vh - var(--nav-h));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+    }
+    .auth-box {
+        width: 100%;
+        max-width: 420px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        padding: 48px 40px;
+    }
+    .auth-logo {
+        text-align: center;
+        margin-bottom: 32px;
+    }
+    .auth-logo-mark {
+        font-family: 'Syne', sans-serif;
+        font-weight: 800;
+        font-size: 2.5rem;
+        background: linear-gradient(135deg, var(--flame), #ff8c69);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: block;
+        line-height: 1;
+    }
+    .auth-tagline {
+        color: var(--muted);
+        font-size: 0.875rem;
+        margin-top: 6px;
+    }
+    .auth-title {
+        font-family: 'Syne', sans-serif;
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin-bottom: 24px;
+    }
+    .auth-footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 0.875rem;
+        color: var(--muted);
+    }
+    .auth-footer a { color: var(--flame); text-decoration: none; font-weight: 500; }
+</style>
+
+<div class="auth-wrap">
+    <div class="auth-box">
+        <div class="auth-logo">
+            <span class="auth-logo-mark">✦ MBINGA</span>
+            <p class="auth-tagline">Find your connection</p>
+        </div>
+        <h2 class="auth-title">Welcome back</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="username" class="form-control" placeholder="you@example.com" required>
+                {% if form.username.errors %}<ul class="errorlist">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                {% if form.password.errors %}<ul class="errorlist">{% for e in form.password.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            {% if form.non_field_errors %}
+            <div style="color:#f87171;font-size:0.875rem;margin-bottom:12px;">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn-flame btn-full" style="margin-top:8px;padding:14px;">Sign In</button>
+        </form>
+        <p class="auth-footer">Don't have an account? <a href="{% url 'accounts:register' %}">Create one</a></p>
+    </div>
+</div>
+{% endblock %}

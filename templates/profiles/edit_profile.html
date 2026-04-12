@@ -1,0 +1,234 @@
+{% extends 'base.html' %}
+{% block title %}Edit Profile — Spark{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-edit-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px; }
+    @media (max-width: 768px) { .profile-edit-grid { grid-template-columns: 1fr; } }
+    .section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.1rem; margin-bottom: 16px; }
+    .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+    .photo-slot {
+        aspect-ratio: 3/4;
+        border-radius: 14px;
+        border: 2px dashed var(--border);
+        overflow: hidden;
+        position: relative;
+        background: var(--surface2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        font-size: 1.5rem;
+    }
+    .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-slot .photo-actions {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.7);
+        padding: 6px;
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+    }
+    .photo-slot .badge-primary {
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        background: var(--flame);
+        color: white;
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 6px;
+    }
+    .upload-zone {
+        border: 2px dashed var(--border);
+        border-radius: 14px;
+        padding: 24px;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s;
+        margin-bottom: 12px;
+    }
+    .upload-zone:hover { border-color: var(--flame); }
+    .upload-zone input { display: none; }
+    .interest-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .interest-tag {
+        padding: 6px 14px;
+        border-radius: 20px;
+        border: 1.5px solid var(--border);
+        background: var(--surface2);
+        color: var(--muted);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        user-select: none;
+    }
+    .interest-tag.selected { border-color: var(--flame); color: var(--flame); background: rgba(255,68,88,0.1); }
+    .completion-bar {
+        height: 6px;
+        background: var(--surface2);
+        border-radius: 3px;
+        margin-bottom: 16px;
+        overflow: hidden;
+    }
+    .completion-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--flame), #ff8c69);
+        border-radius: 3px;
+        transition: width 0.3s;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;margin-bottom:24px;">
+    {% if profile.is_complete %}Edit Your Profile{% else %}Complete Your Profile{% endif %}
+</h1>
+
+{% if not profile.is_complete %}
+<div class="card" style="margin-bottom:20px;border-color:rgba(255,68,88,0.3);">
+    <p style="color:var(--muted);font-size:0.875rem;">Fill in your name, birthday, and gender to activate your profile and start discovering.</p>
+</div>
+{% endif %}
+
+<div class="profile-edit-grid">
+    <!-- Photos Panel -->
+    <div>
+        <div class="card">
+            <div class="section-title">📸 Photos</div>
+            <div class="photo-grid">
+                {% for photo in profile.photos.all %}
+                <div class="photo-slot">
+                    <img src="{{ photo.image.url }}" alt="">
+                    {% if photo.is_primary %}<span class="badge-primary">Main</span>{% endif %}
+                    <div class="photo-actions">
+                        {% if not photo.is_primary %}
+                        <a href="{% url 'profiles:set_primary_photo' photo.pk %}" class="btn btn-sm btn-ghost" style="font-size:0.7rem;padding:3px 8px;" title="Set as main">★</a>
+                        {% endif %}
+                        <a href="{% url 'profiles:delete_photo' photo.pk %}" class="btn btn-sm btn-danger" style="font-size:0.7rem;padding:3px 8px;" onclick="return confirm('Delete this photo?')">✕</a>
+                    </div>
+                </div>
+                {% endfor %}
+                {% if profile.photos.count < 6 %}
+                <div class="photo-slot" onclick="document.getElementById('photo-upload-input').click()" style="cursor:pointer;">+</div>
+                {% endif %}
+            </div>
+            <form method="post" action="{% url 'profiles:upload_photo' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="file" id="photo-upload-input" name="image" accept="image/*" onchange="this.form.submit()" style="display:none;">
+                <input type="hidden" name="is_primary" value="{% if not profile.photos.exists %}True{% else %}False{% endif %}">
+            </form>
+            <p style="font-size:0.75rem;color:var(--muted);text-align:center;">Click the + slot to upload (max 6 photos)</p>
+        </div>
+
+        <!-- Interests -->
+        <div class="card" style="margin-top:16px;">
+            <div class="section-title">✨ Interests</div>
+            <div class="interest-grid" id="interest-grid">
+                {% for interest in interests %}
+                <label class="interest-tag {% if interest.id in user_interest_ids %}selected{% endif %}" 
+                       onclick="toggleInterest(this)">
+                    {{ interest.emoji }} {{ interest.name }}
+                    <input type="checkbox" name="interests_hidden" value="{{ interest.id }}"
+                           {% if interest.id in user_interest_ids %}checked{% endif %}
+                           style="display:none;">
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Form -->
+    <div class="card">
+        <div class="section-title">👤 About You</div>
+        <form method="post" id="profile-form">
+            {% csrf_token %}
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">First Name *</label>
+                    <input type="text" name="first_name" class="form-control" value="{{ form.first_name.value|default:'' }}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" name="last_name" class="form-control" value="{{ form.last_name.value|default:'' }}">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Bio</label>
+                <textarea name="bio" class="form-control" placeholder="Tell people about yourself...">{{ form.bio.value|default:'' }}</textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">Birthday *</label>
+                    <input type="date" name="birth_date" class="form-control" value="{{ form.birth_date.value|default:'' }}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Gender *</label>
+                    <select name="gender" class="form-control" required>
+                        <option value="">Select...</option>
+                        <option value="M" {% if form.gender.value == 'M' %}selected{% endif %}>Man</option>
+                        <option value="W" {% if form.gender.value == 'W' %}selected{% endif %}>Woman</option>
+                        <option value="NB" {% if form.gender.value == 'NB' %}selected{% endif %}>Non-binary</option>
+                        <option value="O" {% if form.gender.value == 'O' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Interested In</label>
+                <select name="interested_in" class="form-control">
+                    <option value="E" {% if form.interested_in.value == 'E' %}selected{% endif %}>Everyone</option>
+                    <option value="M" {% if form.interested_in.value == 'M' %}selected{% endif %}>Men</option>
+                    <option value="W" {% if form.interested_in.value == 'W' %}selected{% endif %}>Women</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Location</label>
+                <input type="text" name="location" class="form-control" placeholder="City, Country" value="{{ form.location.value|default:'' }}">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div class="form-group">
+                    <label class="form-label">Job Title</label>
+                    <input type="text" name="job_title" class="form-control" value="{{ form.job_title.value|default:'' }}" placeholder="What do you do?">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Company</label>
+                    <input type="text" name="company" class="form-control" value="{{ form.company.value|default:'' }}" placeholder="Where do you work?">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Education</label>
+                <input type="text" name="education" class="form-control" value="{{ form.education.value|default:'' }}" placeholder="University / School">
+            </div>
+            <!-- Hidden interests from checkbox panel -->
+            <div id="interests-hidden-container"></div>
+            <button type="submit" class="btn btn-flame btn-full" style="padding:14px;margin-top:8px;">Save Profile</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleInterest(el) {
+    el.classList.toggle('selected');
+    el.querySelector('input').checked = el.classList.contains('selected');
+}
+
+// Sync interest checkboxes to profile form before submit
+document.getElementById('profile-form').addEventListener('submit', function(e) {
+    const container = document.getElementById('interests-hidden-container');
+    container.innerHTML = '';
+    document.querySelectorAll('.interest-tag.selected input').forEach(inp => {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'interests';
+        hidden.value = inp.value;
+        container.appendChild(hidden);
+    });
+});
+</script>
+{% endblock %}

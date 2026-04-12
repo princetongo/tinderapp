@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard — Spark{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .admin-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.8rem; }
+    .admin-badge { background: rgba(255,68,88,0.15); color: var(--flame); font-size: 0.75rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(255,68,88,0.3); }
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+    @media(max-width:768px) { .stats-grid { grid-template-columns: 1fr 1fr; } }
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 18px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+    }
+    .stat-card.red::before { background: var(--flame); }
+    .stat-card.blue::before { background: var(--superlike); }
+    .stat-card.gold::before { background: var(--gold); }
+    .stat-card.green::before { background: #4ade80; }
+    .stat-icon { font-size: 1.5rem; margin-bottom: 10px; }
+    .stat-value { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2rem; }
+    .stat-label { color: var(--muted); font-size: 0.8rem; margin-top: 4px; }
+    .stat-sub { font-size: 0.75rem; color: #4ade80; margin-top: 2px; }
+
+    .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media(max-width:900px) { .admin-grid { grid-template-columns: 1fr; } }
+
+    .admin-section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+    .user-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .user-row:last-child { border-bottom: none; }
+    .user-avatar-sm {
+        width: 38px; height: 38px; border-radius: 50%;
+        background: linear-gradient(135deg, var(--flame), #ff8c69);
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 700; font-size: 0.9rem; color: white;
+        flex-shrink: 0;
+    }
+    .user-row-info { flex: 1; min-width: 0; }
+    .user-row-name { font-weight: 500; font-size: 0.875rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-row-email { color: var(--muted); font-size: 0.75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-row-time { color: var(--muted); font-size: 0.75rem; flex-shrink: 0; }
+
+    .report-row { padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .report-row:last-child { border-bottom: none; }
+    .report-reason-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 600; background: rgba(255,68,88,0.15); color: var(--flame); border: 1px solid rgba(255,68,88,0.3); }
+    .admin-nav { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .admin-nav-link { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+    .admin-nav-link:hover, .admin-nav-link.active { background: var(--flame); color: white; border-color: var(--flame); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <h1 class="admin-title">🛡 Admin Dashboard</h1>
+    <span class="admin-badge">Staff Panel</span>
+</div>
+
+<div class="admin-nav">
+    <a href="{% url 'admin_panel:dashboard' %}" class="admin-nav-link active">Dashboard</a>
+    <a href="{% url 'admin_panel:user_list' %}" class="admin-nav-link">Users</a>
+    <a href="{% url 'admin_panel:reports' %}" class="admin-nav-link">
+        Reports
+        {% if stats.pending_reports > 0 %}<span style="background:var(--flame);color:white;font-size:0.65rem;padding:1px 6px;border-radius:8px;margin-left:4px;">{{ stats.pending_reports }}</span>{% endif %}
+    </a>
+    <a href="{% url 'admin:index' %}" class="admin-nav-link" target="_blank">Django Admin ↗</a>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card red">
+        <div class="stat-icon">👥</div>
+        <div class="stat-value">{{ stats.total_users }}</div>
+        <div class="stat-label">Total Users</div>
+        <div class="stat-sub">{{ stats.active_users }} active this week</div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon">❤️</div>
+        <div class="stat-value">{{ stats.total_matches }}</div>
+        <div class="stat-label">Active Matches</div>
+        <div class="stat-sub">+{{ stats.new_matches_week }} this week</div>
+    </div>
+    <div class="stat-card blue">
+        <div class="stat-icon">💬</div>
+        <div class="stat-value">{{ stats.total_messages }}</div>
+        <div class="stat-label">Total Messages</div>
+    </div>
+    <div class="stat-card gold">
+        <div class="stat-icon">👆</div>
+        <div class="stat-value">{{ stats.total_swipes }}</div>
+        <div class="stat-label">Total Swipes</div>
+        <div class="stat-sub">{{ stats.likes_week }} likes this week</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-icon">🚫</div>
+        <div class="stat-value">{{ stats.banned_users }}</div>
+        <div class="stat-label">Banned Users</div>
+    </div>
+    <div class="stat-card red">
+        <div class="stat-icon">⚑</div>
+        <div class="stat-value">{{ stats.pending_reports }}</div>
+        <div class="stat-label">Pending Reports</div>
+        {% if stats.pending_reports > 0 %}<div class="stat-sub" style="color:var(--flame);">Needs attention</div>{% endif %}
+    </div>
+</div>
+
+<div class="admin-grid">
+    <div class="card">
+        <div class="admin-section-title">
+            Recent Users
+            <a href="{% url 'admin_panel:user_list' %}" style="font-size:0.8rem;color:var(--flame);text-decoration:none;">View all →</a>
+        </div>
+        {% for user in recent_users %}
+        <div class="user-row">
+            <div class="user-avatar-sm">{{ user.username|first|upper }}</div>
+            <div class="user-row-info">
+                <a href="{% url 'admin_panel:user_detail' user.id %}" style="text-decoration:none;color:inherit;">
+                    <div class="user-row-name">{{ user.username }}</div>
+                    <div class="user-row-email">{{ user.email }}</div>
+                </a>
+            </div>
+            <div class="user-row-time">{{ user.date_joined|timesince }} ago</div>
+            {% if user.is_banned %}
+            <span style="background:rgba(248,113,113,0.15);color:#f87171;font-size:0.65rem;padding:2px 6px;border-radius:6px;">BANNED</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <div class="admin-section-title">
+            Pending Reports
+            <a href="{% url 'admin_panel:reports' %}" style="font-size:0.8rem;color:var(--flame);text-decoration:none;">View all →</a>
+        </div>
+        {% if pending_reports %}
+        {% for report in pending_reports %}
+        <div class="report-row">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                <span class="report-reason-badge">{{ report.get_reason_display }}</span>
+                <span style="font-size:0.75rem;color:var(--muted);">{{ report.created_at|timesince }} ago</span>
+            </div>
+            <div style="font-size:0.8rem;color:var(--muted);">
+                <a href="{% url 'admin_panel:user_detail' report.reporter.id %}" style="color:var(--text);text-decoration:none;">{{ report.reporter.username }}</a>
+                <span> reported </span>
+                <a href="{% url 'admin_panel:user_detail' report.reported.id %}" style="color:var(--flame);text-decoration:none;">{{ report.reported.username }}</a>
+            </div>
+            {% if report.details %}
+            <div style="font-size:0.75rem;color:var(--muted);margin-top:3px;">{{ report.details|truncatechars:80 }}</div>
+            {% endif %}
+            <a href="{% url 'admin_panel:review_report' report.id %}" class="btn btn-sm btn-ghost" style="margin-top:8px;">Mark Reviewed</a>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div style="text-align:center;color:var(--muted);padding:30px;font-size:0.875rem;">✅ No pending reports</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

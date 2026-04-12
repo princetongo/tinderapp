@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% block title %}Discover — Spark{% endblock %}
+{% block nav_discover %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    main { padding: 0; max-width: 100%; }
+    .discover-layout {
+        display: flex;
+        height: calc(100vh - var(--nav-h));
+        overflow: hidden;
+    }
+    .card-stack-area {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        padding: 24px;
+    }
+    .stack {
+        position: relative;
+        width: 360px;
+        height: 520px;
+    }
+    .profile-card {
+        position: absolute;
+        inset: 0;
+        border-radius: 24px;
+        overflow: hidden;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        cursor: grab;
+        user-select: none;
+        transition: transform 0.1s;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .profile-card:nth-child(2) { transform: rotate(2deg) translateY(8px); z-index: 1; }
+    .profile-card:nth-child(3) { transform: rotate(-1.5deg) translateY(16px); z-index: 0; }
+    .profile-card.top { z-index: 10; }
+    .profile-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        pointer-events: none;
+    }
+    .profile-card .no-photo {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 5rem;
+    }
+    .card-info {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        padding: 20px 20px 16px;
+        background: linear-gradient(transparent, rgba(0,0,0,0.85) 40%, rgba(0,0,0,0.95));
+    }
+    .card-name {
+        font-family: 'Syne', sans-serif;
+        font-weight: 700;
+        font-size: 1.6rem;
+        line-height: 1.1;
+    }
+    .card-meta {
+        font-size: 0.875rem;
+        color: rgba(255,255,255,0.7);
+        margin-top: 4px;
+    }
+    .card-bio {
+        font-size: 0.8rem;
+        color: rgba(255,255,255,0.55);
+        margin-top: 6px;
+        line-height: 1.4;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    .card-verified {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background: rgba(0,180,216,0.2);
+        color: var(--superlike);
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 3px 8px;
+        border-radius: 8px;
+        margin-top: 6px;
+    }
+    /* Swipe overlays */
+    .swipe-overlay {
+        position: absolute;
+        top: 20px;
+        padding: 8px 16px;
+        border-radius: 12px;
+        font-family: 'Syne', sans-serif;
+        font-weight: 800;
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+        opacity: 0;
+        transition: opacity 0.1s;
+        pointer-events: none;
+        z-index: 20;
+    }
+    .swipe-overlay.like { left: 20px; border: 3px solid #4ade80; color: #4ade80; transform: rotate(-15deg); }
+    .swipe-overlay.nope { right: 20px; border: 3px solid var(--flame); color: var(--flame); transform: rotate(15deg); }
+    /* Action buttons */
+    .action-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 28px;
+    }
+    .action-btn {
+        border: none;
+        cursor: pointer;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .action-btn.dislike { width: 56px; height: 56px; background: var(--surface2); color: var(--flame); border: 2px solid var(--border); font-size: 1.3rem; }
+    .action-btn.superlike { width: 48px; height: 48px; background: var(--surface2); color: var(--superlike); border: 2px solid var(--border); font-size: 1.1rem; }
+    .action-btn.like { width: 64px; height: 64px; background: linear-gradient(135deg, #4ade80, #22c55e); color: white; font-size: 1.5rem; }
+    .action-btn:hover { transform: scale(1.1); }
+    .action-btn:active { transform: scale(0.95); }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+    }
+    .empty-state .emoji { font-size: 4rem; margin-bottom: 16px; }
+    .empty-state h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.4rem; margin-bottom: 8px; }
+    .empty-state p { color: var(--muted); }
+
+    /* Match modal */
+    .match-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.85);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    }
+    .match-modal-overlay.show { display: flex; }
+    .match-modal {
+        text-align: center;
+        padding: 48px 40px;
+        max-width: 380px;
+        width: 90%;
+    }
+    .match-firework { font-size: 3.5rem; margin-bottom: 8px; animation: pop 0.5s ease; }
+    @keyframes pop { 0% { transform: scale(0.5); opacity: 0; } 70% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+    .match-title {
+        font-family: 'Syne', sans-serif;
+        font-weight: 800;
+        font-size: 2.2rem;
+        background: linear-gradient(135deg, var(--flame), var(--gold));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px;
+    }
+    .match-sub { color: var(--muted); margin-bottom: 28px; }
+    .match-actions { display: flex; flex-direction: column; gap: 12px; }
+
+    /* Swipe hint */
+    .swipe-hint { color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 12px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="discover-layout">
+    <div class="card-stack-area">
+        {% if profiles %}
+        <div class="stack" id="card-stack">
+            {% for profile in profiles %}
+            <div class="profile-card {% if forloop.first %}top{% endif %}"
+                 data-profile-id="{{ profile.user.id }}"
+                 data-index="{{ forloop.counter0 }}">
+                {% if profile.primary_photo %}
+                    <img src="{{ profile.primary_photo.image.url }}" alt="{{ profile.first_name }}">
+                {% else %}
+                    <div class="no-photo">😊</div>
+                {% endif %}
+                <div class="swipe-overlay like">LIKE</div>
+                <div class="swipe-overlay nope">NOPE</div>
+                <div class="card-info">
+                    <div class="card-name">{{ profile.first_name }}{% if profile.age %}, {{ profile.age }}{% endif %}</div>
+                    {% if profile.location or profile.job_title %}
+                    <div class="card-meta">
+                        {% if profile.job_title %}{{ profile.job_title }}{% if profile.company %} at {{ profile.company }}{% endif %}{% endif %}
+                        {% if profile.location %} · {{ profile.location }}{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if profile.bio %}<div class="card-bio">{{ profile.bio }}</div>{% endif %}
+                    {% if profile.is_verified %}<span class="card-verified">✓ Verified</span>{% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="action-buttons" id="action-buttons">
+            <button class="action-btn dislike" onclick="swipe('dislike')" title="Nope">✗</button>
+            <button class="action-btn superlike" onclick="swipe('superlike')" title="Super Like">★</button>
+            <button class="action-btn like" onclick="swipe('like')" title="Like">♥</button>
+        </div>
+        <p class="swipe-hint">Swipe right to like · Swipe left to pass · ★ to super like</p>
+        {% else %}
+        <div class="empty-state">
+            <div class="emoji">🌍</div>
+            <h3>No more profiles nearby</h3>
+            <p>Check back later — new people join every day!</p>
+            <a href="{% url 'profiles:edit_profile' %}" class="btn btn-flame" style="margin-top:20px;">Update Your Preferences</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Match Modal -->
+<div class="match-modal-overlay" id="match-modal">
+    <div class="match-modal">
+        <div class="match-firework">🎉</div>
+        <div class="match-title">It's a Match!</div>
+        <p class="match-sub">You and <strong id="match-name"></strong> liked each other</p>
+        <div class="match-actions">
+            <a href="{% url 'matching:matches' %}" class="btn btn-flame">💬 Send a Message</a>
+            <button onclick="closeMatchModal()" class="btn btn-ghost">Keep Swiping</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const CSRF = '{{ csrf_token }}';
+let cards = Array.from(document.querySelectorAll('.profile-card'));
+let isDragging = false;
+let startX = 0, currentX = 0;
+let activeCard = null;
+
+function getTopCard() {
+    return document.querySelector('.profile-card.top');
+}
+
+function swipe(direction) {
+    const card = getTopCard();
+    if (!card) return;
+    const userId = card.dataset.profileId;
+    const flyX = direction === 'like' ? 800 : direction === 'superlike' ? 0 : -800;
+    const flyY = direction === 'superlike' ? -800 : 0;
+    card.style.transition = 'transform 0.4s ease, opacity 0.4s';
+    card.style.transform = `translate(${flyX}px, ${flyY}px) rotate(${direction === 'like' ? 30 : direction === 'dislike' ? -30 : 0}deg)`;
+    card.style.opacity = '0';
+    sendSwipe(userId, direction);
+    setTimeout(() => {
+        card.remove();
+        updateStack();
+    }, 400);
+}
+
+function updateStack() {
+    const remaining = document.querySelectorAll('.profile-card');
+    if (remaining.length === 0) {
+        document.getElementById('action-buttons')?.remove();
+        const stack = document.getElementById('card-stack');
+        if (stack) {
+            stack.innerHTML = `<div class="empty-state"><div class="emoji">✨</div><h3>You've seen everyone!</h3><p>Come back later for more.</p></div>`;
+        }
+        return;
+    }
+    remaining[0].classList.add('top');
+    setupDrag(remaining[0]);
+}
+
+function sendSwipe(userId, direction) {
+    fetch('/matching/swipe/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+        body: JSON.stringify({swiped_id: userId, direction: direction})
+    }).then(r => r.json()).then(d => {
+        if (d.matched) showMatchModal(d.match_name);
+    }).catch(console.error);
+}
+
+function showMatchModal(name) {
+    document.getElementById('match-name').textContent = name;
+    document.getElementById('match-modal').classList.add('show');
+}
+
+function closeMatchModal() {
+    document.getElementById('match-modal').classList.remove('show');
+}
+
+// Drag to swipe
+function setupDrag(card) {
+    card.addEventListener('mousedown', dragStart);
+    card.addEventListener('touchstart', dragStart, {passive: true});
+}
+
+function dragStart(e) {
+    activeCard = getTopCard();
+    if (!activeCard) return;
+    isDragging = true;
+    startX = (e.touches ? e.touches[0].clientX : e.clientX);
+    document.addEventListener('mousemove', dragMove);
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('touchmove', dragMove, {passive: true});
+    document.addEventListener('touchend', dragEnd);
+}
+
+function dragMove(e) {
+    if (!isDragging || !activeCard) return;
+    currentX = (e.touches ? e.touches[0].clientX : e.clientX) - startX;
+    const rotate = currentX * 0.08;
+    activeCard.style.transform = `translateX(${currentX}px) rotate(${rotate}deg)`;
+    const likeOverlay = activeCard.querySelector('.swipe-overlay.like');
+    const nopeOverlay = activeCard.querySelector('.swipe-overlay.nope');
+    if (currentX > 30) {
+        likeOverlay.style.opacity = Math.min(currentX / 100, 1);
+        nopeOverlay.style.opacity = 0;
+    } else if (currentX < -30) {
+        nopeOverlay.style.opacity = Math.min(-currentX / 100, 1);
+        likeOverlay.style.opacity = 0;
+    } else {
+        likeOverlay.style.opacity = 0;
+        nopeOverlay.style.opacity = 0;
+    }
+}
+
+function dragEnd() {
+    isDragging = false;
+    document.removeEventListener('mousemove', dragMove);
+    document.removeEventListener('mouseup', dragEnd);
+    document.removeEventListener('touchmove', dragMove);
+    document.removeEventListener('touchend', dragEnd);
+    if (!activeCard) return;
+    if (currentX > 80) {
+        swipe('like');
+    } else if (currentX < -80) {
+        swipe('dislike');
+    } else {
+        activeCard.style.transition = 'transform 0.3s ease';
+        activeCard.style.transform = '';
+        const overlays = activeCard.querySelectorAll('.swipe-overlay');
+        overlays.forEach(o => o.style.opacity = 0);
+    }
+    activeCard = null;
+    currentX = 0;
+}
+
+// Init drag on top card
+const topCard = getTopCard();
+if (topCard) setupDrag(topCard);
+</script>
+{% endblock %}

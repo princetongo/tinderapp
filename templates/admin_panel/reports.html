@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Reports — Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-nav { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .admin-nav-link { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+    .admin-nav-link:hover, .admin-nav-link.active { background: var(--flame); color: white; border-color: var(--flame); }
+    .filter-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .filter-tab { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); text-decoration: none; font-size: 0.8rem; transition: all 0.2s; }
+    .filter-tab.active, .filter-tab:hover { background: var(--flame); color: white; border-color: var(--flame); }
+    .report-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 12px; }
+    .report-card.reviewed { opacity: 0.6; }
+    .reason-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; background: rgba(255,68,88,0.15); color: var(--flame); border: 1px solid rgba(255,68,88,0.3); }
+    .reviewed-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;margin-bottom:24px;">⚑ Reports</h1>
+
+<div class="admin-nav">
+    <a href="{% url 'admin_panel:dashboard' %}" class="admin-nav-link">Dashboard</a>
+    <a href="{% url 'admin_panel:user_list' %}" class="admin-nav-link">Users</a>
+    <a href="{% url 'admin_panel:reports' %}" class="admin-nav-link active">Reports</a>
+</div>
+
+<div class="filter-tabs">
+    <a href="?filter=pending" class="filter-tab {% if filter_type == 'pending' %}active{% endif %}">Pending</a>
+    <a href="?filter=reviewed" class="filter-tab {% if filter_type == 'reviewed' %}active{% endif %}">Reviewed</a>
+    <a href="?filter=all" class="filter-tab {% if filter_type == 'all' %}active{% endif %}">All</a>
+</div>
+
+{% if reports %}
+{% for report in reports %}
+<div class="report-card {% if report.is_reviewed %}reviewed{% endif %}">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span class="reason-badge">{{ report.get_reason_display }}</span>
+            {% if report.is_reviewed %}<span class="reviewed-badge">✓ Reviewed</span>{% endif %}
+        </div>
+        <span style="color:var(--muted);font-size:0.75rem;">{{ report.created_at|date:"M d, Y H:i" }}</span>
+    </div>
+    <div style="font-size:0.875rem;margin-bottom:10px;">
+        <span style="color:var(--muted);">Reporter: </span>
+        <a href="{% url 'admin_panel:user_detail' report.reporter.id %}" style="color:var(--text);text-decoration:none;font-weight:500;">{{ report.reporter.username }}</a>
+        <span style="color:var(--muted);margin:0 8px;">→</span>
+        <span style="color:var(--muted);">Reported: </span>
+        <a href="{% url 'admin_panel:user_detail' report.reported.id %}" style="color:var(--flame);text-decoration:none;font-weight:500;">{{ report.reported.username }}</a>
+    </div>
+    {% if report.details %}
+    <div style="background:var(--surface2);border-radius:10px;padding:12px;font-size:0.85rem;color:var(--muted);margin-bottom:12px;">
+        {{ report.details }}
+    </div>
+    {% endif %}
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        {% if not report.is_reviewed %}
+        <a href="{% url 'admin_panel:review_report' report.id %}" class="btn btn-sm btn-ghost">✓ Mark Reviewed</a>
+        {% endif %}
+        <a href="{% url 'admin_panel:user_detail' report.reported.id %}" class="btn btn-sm btn-ghost">View Profile</a>
+        {% if not report.reported.is_banned %}
+        <a href="{% url 'admin_panel:ban_user' report.reported.id %}"
+           class="btn btn-sm btn-danger"
+           onclick="return confirm('Ban {{ report.reported.username }}?')">Ban User</a>
+        {% else %}
+        <span class="btn btn-sm" style="background:rgba(248,113,113,0.1);color:#f87171;cursor:default;">Already Banned</span>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<div style="text-align:center;padding:60px;color:var(--muted);">
+    <div style="font-size:3rem;margin-bottom:16px;">✅</div>
+    <div style="font-size:1.1rem;font-family:'Syne',sans-serif;font-weight:700;color:var(--text);margin-bottom:8px;">All clear!</div>
+    <div>No reports in this category.</div>
+</div>
+{% endif %}
+{% endblock %}

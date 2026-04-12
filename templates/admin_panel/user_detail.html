@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% block title %}{{ target.username }} — Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-nav { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .admin-nav-link { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); text-decoration: none; font-size: 0.85rem; font-weight: 500; transition: all 0.2s; }
+    .admin-nav-link:hover { background: var(--flame); color: white; border-color: var(--flame); }
+    .detail-grid { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+    @media(max-width:900px) { .detail-grid { grid-template-columns: 1fr; } }
+    .info-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: var(--muted); }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; }
+    .badge-active { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+    .badge-banned { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+    .section-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 14px; }
+    .match-item-sm { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+    .match-item-sm:last-child { border-bottom: none; }
+    .profile-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .profile-photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); }
+    .danger-zone { border: 1px solid rgba(248,113,113,0.3); border-radius: 16px; padding: 20px; margin-top: 16px; background: rgba(248,113,113,0.05); }
+    .danger-title { font-weight: 700; color: #f87171; margin-bottom: 12px; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-nav">
+    <a href="{% url 'admin_panel:dashboard' %}" class="admin-nav-link">Dashboard</a>
+    <a href="{% url 'admin_panel:user_list' %}" class="admin-nav-link">← Users</a>
+</div>
+
+<h1 style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;margin-bottom:24px;">
+    User: {{ target.username }}
+</h1>
+
+<div class="detail-grid">
+    <!-- Left: Account Info -->
+    <div>
+        <div class="card">
+            <div class="section-title">Account Info</div>
+            <div class="info-row">
+                <span class="info-label">Email</span>
+                <span>{{ target.email }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Username</span>
+                <span>{{ target.username }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Joined</span>
+                <span>{{ target.date_joined|date:"M d, Y" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Last Seen</span>
+                <span>{% if target.last_seen %}{{ target.last_seen|timesince }} ago{% else %}Never{% endif %}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Status</span>
+                <span>
+                    {% if target.is_banned %}<span class="status-badge badge-banned">Banned</span>
+                    {% elif target.is_active %}<span class="status-badge badge-active">Active</span>
+                    {% else %}<span class="status-badge">Inactive</span>{% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Admin</span>
+                <span>{% if target.is_staff or target.is_admin %}Yes{% else %}No{% endif %}</span>
+            </div>
+        </div>
+
+        {% if profile %}
+        <div class="card" style="margin-top:16px;">
+            <div class="section-title">Profile Info</div>
+            <div class="info-row"><span class="info-label">Name</span><span>{{ profile.first_name }} {{ profile.last_name }}</span></div>
+            <div class="info-row"><span class="info-label">Age</span><span>{% if profile.age %}{{ profile.age }}{% else %}—{% endif %}</span></div>
+            <div class="info-row"><span class="info-label">Gender</span><span>{{ profile.get_gender_display|default:"—" }}</span></div>
+            <div class="info-row"><span class="info-label">Location</span><span>{{ profile.location|default:"—" }}</span></div>
+            <div class="info-row"><span class="info-label">Job</span><span>{{ profile.job_title|default:"—" }}</span></div>
+            <div class="info-row">
+                <span class="info-label">Verified</span>
+                <span>{% if profile.is_verified %}✓ Yes{% else %}No{% endif %}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Complete</span>
+                <span>{% if profile.is_complete %}Yes{% else %}No{% endif %}</span>
+            </div>
+            {% if profile.bio %}
+            <div style="margin-top:12px;padding:12px;background:var(--surface2);border-radius:10px;font-size:0.85rem;color:var(--muted);">
+                "{{ profile.bio|truncatechars:200 }}"
+            </div>
+            {% endif %}
+            {% if profile.photos.exists %}
+            <div class="profile-photo-grid">
+                {% for photo in profile.photos.all|slice:":6" %}
+                <img src="{{ photo.image.url }}" alt="">
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="danger-zone">
+            <div class="danger-title">⚠ Admin Actions</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                {% if profile %}
+                <a href="{% url 'admin_panel:verify_profile' target.id %}" class="btn btn-ghost btn-full">
+                    {% if profile.is_verified %}Remove Verification{% else %}✓ Verify Profile{% endif %}
+                </a>
+                {% endif %}
+                {% if not target.is_banned %}
+                <a href="{% url 'admin_panel:ban_user' target.id %}"
+                   class="btn btn-danger btn-full"
+                   onclick="return confirm('Ban {{ target.username }}? They will lose access immediately.')">
+                   🚫 Ban User
+                </a>
+                {% else %}
+                <a href="{% url 'admin_panel:unban_user' target.id %}" class="btn btn-flame btn-full">✓ Unban User</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Matches & Reports -->
+    <div>
+        <!-- Swipe Stats -->
+        <div class="card" style="margin-bottom:16px;">
+            <div class="section-title">Swipe Statistics</div>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+                {% for stat in swipe_stats %}
+                <div style="text-align:center;padding:16px 24px;background:var(--surface2);border-radius:14px;flex:1;">
+                    <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:1.6rem;">{{ stat.count }}</div>
+                    <div style="color:var(--muted);font-size:0.8rem;margin-top:4px;text-transform:capitalize;">{{ stat.direction }}</div>
+                </div>
+                {% empty %}
+                <div style="color:var(--muted);font-size:0.875rem;">No swipe data yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Matches -->
+        <div class="card" style="margin-bottom:16px;">
+            <div class="section-title">Matches ({{ matches.count }})</div>
+            {% for match in matches|slice:":10" %}
+            <div class="match-item-sm">
+                <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--flame),#ff8c69);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;color:white;flex-shrink:0;">
+                    {% with other=match.user1 %}{% if other == target %}{{ match.user2.username|first|upper }}{% else %}{{ other.username|first|upper }}{% endif %}{% endwith %}
+                </div>
+                <div style="flex:1;min-width:0;">
+                    {% with other=match.user1 %}
+                    {% if other == target %}
+                        <a href="{% url 'admin_panel:user_detail' match.user2.id %}" style="color:var(--text);text-decoration:none;font-size:0.85rem;">{{ match.user2.username }}</a>
+                    {% else %}
+                        <a href="{% url 'admin_panel:user_detail' other.id %}" style="color:var(--text);text-decoration:none;font-size:0.85rem;">{{ other.username }}</a>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+                <span style="font-size:0.75rem;color:var(--muted);">{{ match.created_at|date:"M d" }}</span>
+                {% if not match.is_active %}<span style="font-size:0.7rem;color:#f87171;">Inactive</span>{% endif %}
+            </div>
+            {% empty %}
+            <div style="color:var(--muted);font-size:0.875rem;">No matches yet.</div>
+            {% endfor %}
+        </div>
+
+        <!-- Reports Received -->
+        <div class="card">
+            <div class="section-title">Reports Received ({{ reports_received.count }})</div>
+            {% for report in reports_received %}
+            <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+                <div style="display:flex;justify-content:space-between;font-size:0.8rem;">
+                    <span>
+                        <strong>{{ report.get_reason_display }}</strong> by
+                        <a href="{% url 'admin_panel:user_detail' report.reporter.id %}" style="color:var(--flame);text-decoration:none;">{{ report.reporter.username }}</a>
+                    </span>
+                    <span style="color:var(--muted);">{{ report.created_at|date:"M d" }}</span>
+                </div>
+                {% if report.details %}
+                <div style="color:var(--muted);font-size:0.75rem;margin-top:4px;">{{ report.details|truncatechars:100 }}</div>
+                {% endif %}
+                {% if not report.is_reviewed %}
+                <a href="{% url 'admin_panel:review_report' report.id %}" class="btn btn-sm btn-ghost" style="margin-top:6px;">Mark Reviewed</a>
+                {% else %}
+                <span style="font-size:0.7rem;color:#4ade80;margin-top:4px;display:block;">✓ Reviewed</span>
+                {% endif %}
+            </div>
+            {% empty %}
+            <div style="color:var(--muted);font-size:0.875rem;">No reports received.</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

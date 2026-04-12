@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Create Account — MBINGA{% endblock %}
+{% block content %}
+<style>
+    body { background: radial-gradient(ellipse at 70% 80%, rgba(255,68,88,0.1) 0%, var(--bg) 60%); }
+    .auth-wrap { min-height: calc(100vh - var(--nav-h)); display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+    .auth-box { width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--border); border-radius: 28px; padding: 48px 40px; }
+    .auth-logo { text-align: center; margin-bottom: 32px; }
+    .auth-logo-mark { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.5rem; background: linear-gradient(135deg, var(--flame), #ff8c69); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: block; }
+    .auth-tagline { color: var(--muted); font-size: 0.875rem; margin-top: 6px; }
+    .auth-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.5rem; margin-bottom: 24px; }
+    .auth-footer { text-align: center; margin-top: 20px; font-size: 0.875rem; color: var(--muted); }
+    .auth-footer a { color: var(--flame); text-decoration: none; font-weight: 500; }
+</style>
+<div class="auth-wrap">
+    <div class="auth-box">
+        <div class="auth-logo">
+            <span class="auth-logo-mark">✦ MBINGA</span>
+            <p class="auth-tagline">Your story starts here</p>
+        </div>
+        <h2 class="auth-title">Create account</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" placeholder="you@example.com" value="{{ form.email.value|default:'' }}" required>
+                {% if form.email.errors %}<ul class="errorlist">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" name="username" class="form-control" placeholder="Choose a username" value="{{ form.username.value|default:'' }}" required>
+                {% if form.username.errors %}<ul class="errorlist">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password1" class="form-control" placeholder="At least 8 characters" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <input type="password" name="password2" class="form-control" placeholder="Repeat your password" required>
+                {% if form.password2.errors %}<ul class="errorlist">{% for e in form.password2.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            <button type="submit" class="btn btn-flame btn-full" style="margin-top:8px;padding:14px;">Create Account</button>
+        </form>
+        <p class="auth-footer">Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a></p>
+    </div>
+</div>
+{% endblock %}
