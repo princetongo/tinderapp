@@ -61,10 +61,10 @@ ASGI_APPLICATION = 'tinderapp.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'tinderapp_db',
-        'USER': 'root',
-        'PASSWORD': '',
-        'HOST': 'localhost',
+        'NAME': 'pdnwqioi_mbinga',
+        'USER': 'pdnwqioi_prince',
+        'PASSWORD': 'FAST_2020',
+        'HOST': '57.128.188.247',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',
