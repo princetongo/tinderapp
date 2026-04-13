@@ -7,7 +7,7 @@ SECRET_KEY = 'django-insecure-change-this-in-production-use-env-variable'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['.onrender.com']
+ALLOWED_HOSTS = ['mbinga.net', 'www.mbinga.net', '.onrender.com']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
