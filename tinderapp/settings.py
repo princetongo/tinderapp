@@ -1,4 +1,5 @@
 import os
+import dj_database_url
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -7,7 +8,13 @@ SECRET_KEY = 'django-insecure-change-this-in-production-use-env-variable'
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['.onrender.com']
+ALLOWED_HOSTS = ['.onrender.com', 'mbinga.net', 'www.mbinga.net']
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.onrender.com',
+    'https://mbinga.net',
+    'https://www.mbinga.net'
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -57,6 +64,10 @@ TEMPLATES = [
 WSGI_APPLICATION = 'tinderapp.wsgi.application'
 ASGI_APPLICATION = 'tinderapp.asgi.application'
 
+
+DATABASES = {
+    'default': dj_database_url.parse(os.environ.get("postgresql://mbingadb_user:C5wreQMfFzQaTWxr9KyuLPCgQmICG7M7@dpg-d7e70ebbc2fs73edbh20-a/mbingadb"))
+}
 # MySQL Database
 DATABASES = {
     'default': {
@@ -67,8 +78,8 @@ DATABASES = {
         'HOST': '57.128.188.247',
         'PORT': '3306',
         'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        'charset': 'utf8mb4',
+        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
     }
 }
