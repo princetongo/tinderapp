@@ -65,23 +65,10 @@ WSGI_APPLICATION = 'tinderapp.wsgi.application'
 ASGI_APPLICATION = 'tinderapp.asgi.application'
 
 
-DATABASES = {
-    'default': dj_database_url.parse(os.environ.get("postgresql://mbingadb_user:C5wreQMfFzQaTWxr9KyuLPCgQmICG7M7@dpg-d7e70ebbc2fs73edbh20-a/mbingadb"))
-}
+
 # MySQL Database
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pdnwqioi_mbinga',
-        'USER': 'pdnwqioi_prince',
-        'PASSWORD': 'FAST_2020',
-        'HOST': '57.128.188.247',
-        'PORT': '3306',
-        'OPTIONS': {
-        'charset': 'utf8mb4',
-        'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        },
-    }
+    'default': dj_database_url.parse(os.environ.get("postgresql://mbingadb_user:C5wreQMfFzQaTWxr9KyuLPCgQmICG7M7@dpg-d7e70ebbc2fs73edbh20-a.ohio-postgres.render.com/mbingadb"))
 }
 
 CHANNEL_LAYERS = {
