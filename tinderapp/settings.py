@@ -67,8 +67,11 @@ ASGI_APPLICATION = 'tinderapp.asgi.application'
 
 
 # MySQL Database
+
 DATABASES = {
-    'default': dj_database_url.parse(os.environ.get("postgresql://mbingadb_user:C5wreQMfFzQaTWxr9KyuLPCgQmICG7M7@dpg-d7e70ebbc2fs73edbh20-a.ohio-postgres.render.com/mbingadb"))
+    'default': dj_database_url.parse(
+        os.environ.get("postgresql://mbingadb_user:C5wreQMfFzQaTWxr9KyuLPCgQmICG7M7@dpg-d7e70ebbc2fs73edbh20-a/mbingadb")
+    )
 }
 
 CHANNEL_LAYERS = {
